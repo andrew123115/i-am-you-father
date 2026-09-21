@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>萬能全功能計算機 OmniCalculator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Roboto Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Math.js for high-precision and scientific calculations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            touch-action: manipulation;
+        }
+        .calc-display-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.6);
+        }
+        /* Glassmorphism effects */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.15s ease;
+        }
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-1px);
+        }
+        .glass-btn:active {
+            transform: translateY(1px);
+        }
+        /* Bit display styling for programmer mode */
+        .bit-box {
+            font-size: 11px;
+            width: 22px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full bg-slate-900/80 border-b border-slate-800 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i class="fa-solid font-bold text-white text-lg fa-calculator"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none tracking-tight">萬能計算機</h1>
+                    <span class="text-xs text-slate-400 font-medium">OmniCalculator Pro</span>
+                </div>
+            </div>
+
+            <!-- Mode Selector Tabs (Desktop / Scrollable Mobile) -->
+            <div class="flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800 overflow-x-auto max-w-[50vw] sm:max-w-none text-xs sm:text-sm">
+                <button onclick="switchMode('standard')" id="tab-standard" class="mode-tab px-3 py-1.5 rounded-lg font-medium transition-all bg-cyan-500 text-white shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-calculator"></i> 標準
+                </button>
+                <button onclick="switchMode('scientific')" id="tab-scientific" class="mode-tab px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-flask"></i> 科學
+                </button>
+                <button onclick="switchMode('programmer')" id="tab-programmer" class="mode-tab px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-code"></i> 程式員
+                </button>
+                <button onclick="switchMode('financial')" id="tab-financial" class="mode-tab px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-coins"></i> 金融
+                </button>
+                <button onclick="switchMode('converter')" id="tab-converter" class="mode-tab px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-right-left"></i> 單位換算
+                </button>
+                <button onclick="switchMode('date')" id="tab-date" class="mode-tab px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-regular fa-calendar-days"></i> 日期
+                </button>
+                <button onclick="switchMode('graphing')" id="tab-graphing" class="mode-tab px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <i class="fa-solid fa-chart-line"></i> 繪圖
+                </button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleHistoryDrawer()" class="p-2 text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 rounded-lg border border-slate-700/50 transition" title="歷史紀錄與記憶體">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Main Calculator Work Area -->
+        <div id="calc-container" class="lg:col-span-8 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 sm:p-6 shadow-2xl backdrop-blur-xl relative flex flex-col justify-between">
+            
+            <!-- Toast Notification Box -->
+            <div id="toast" class="hidden absolute top-4 left-1/2 -translate-x-1/2 bg-cyan-600/90 text-white text-xs sm:text-sm px-4 py-2 rounded-full shadow-lg z-50 backdrop-blur-md flex items-center gap-2 transition-all">
+                <i class="fa-solid fa-circle-check"></i>
+                <span id="toast-msg">已複製至剪貼簿</span>
+            </div>
+
+            <!-- Main Display Screen (Shared for Standard, Scientific, Programmer) -->
+            <div id="calculator-display-section" class="bg-slate-950/90 rounded-xl p-4 sm:p-5 border border-slate-800/90 shadow-inner mb-5 relative group">
+                <!-- Status Row (Angle unit, Memory badge, Base indicator) -->
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1 h-5 font-mono">
+                    <div class="flex items-center gap-2">
+                        <span id="deg-rad-badge" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold text-[10px] flex items-center gap-1">
+                            <i class="fa-solid fa-compass text-[9px]"></i> DEG
+                        </span>
+                        <span id="memory-badge" class="hidden text-amber-400 font-bold flex items-center gap-1"><i class="fa-solid fa-memory"></i> 記憶體中</span>
+                    </div>
+                    <div id="expression-preview" class="text-slate-400 overflow-x-auto whitespace-nowrap text-right max-w-[70%] scrollbar-none"></div>
+                </div>
+
+                <!-- Main Output Screen -->
+                <div class="flex items-center justify-between gap-2">
+                    <button onclick="copyToClipboard()" class="opacity-0 group-hover:opacity-100 transition text-slate-500 hover:text-slate-300 text-xs p-1 flex items-center gap-1" title="複製結果">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                    <div id="main-display" class="calc-display-font text-3xl sm:text-5xl font-bold text-right tracking-tight text-white overflow-x-auto whitespace-nowrap scrollbar-none w-full py-1">
+                        0
+                    </div>
+                </div>
+
+                <!-- Programmer Mode Bit Display (Only visible in programmer mode) -->
+                <div id="programmer-bit-display" class="hidden border-t border-slate-800/80 mt-3 pt-2 text-xs font-mono text-slate-400">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                            <span>63</span><span>47</span><span>31</span><span>15</span><span>0</span>
+                        </div>
+                        <div id="bit-grid" class="flex flex-wrap justify-end gap-[2px] font-mono select-none">
+                            <!-- Dynamically generated 64 bits -->
+                        </div>
+                    </div>
+                    <!-- Base breakdown summary -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 pt-2 border-t border-slate-800/60 text-[11px]">
+                        <div id="hex-view" class="cursor-pointer hover:text-cyan-400 flex items-center gap-1" onclick="setProgBase('HEX')"><i class="fa-solid fa-hashtag text-[10px]"></i> HEX: <span class="text-slate-200">0</span></div>
+                        <div id="dec-view" class="cursor-pointer text-cyan-400 font-semibold flex items-center gap-1" onclick="setProgBase('DEC')"><i class="fa-solid fa-list-ol text-[10px]"></i> DEC: <span class="text-cyan-300">0</span></div>
+                        <div id="oct-view" class="cursor-pointer hover:text-cyan-400 flex items-center gap-1" onclick="setProgBase('OCT')"><i class="fa-solid fa-microchip text-[10px]"></i> OCT: <span class="text-slate-200">0</span></div>
+                        <div id="bin-view" class="cursor-pointer hover:text-cyan-400 truncate flex items-center gap-1" onclick="setProgBase('BIN')"><i class="fa-solid fa-network-wired text-[10px]"></i> BIN: <span class="text-slate-200">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode 1 & 2 Keypad: Standard & Scientific -->
+            <div id="keypad-standard-scientific" class="space-y-2">
+                <!-- Memory Functions Row -->
+                <div class="grid grid-cols-5 gap-2 mb-2 text-xs">
+                    <button onclick="handleMemory('MC')" class="py-1.5 rounded-lg bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition font-medium flex items-center justify-center gap-1"><i class="fa-solid fa-trash-can text-[10px]"></i> MC</button>
+                    <button onclick="handleMemory('MR')" class="py-1.5 rounded-lg bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition font-medium flex items-center justify-center gap-1"><i class="fa-solid fa-folder-open text-[10px]"></i> MR</button>
+                    <button onclick="handleMemory('M+')" class="py-1.5 rounded-lg bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition font-medium flex items-center justify-center gap-1"><i class="fa-solid fa-plus text-[10px]"></i> M+</button>
+                    <button onclick="handleMemory('M-')" class="py-1.5 rounded-lg bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition font-medium flex items-center justify-center gap-1"><i class="fa-solid fa-minus text-[10px]"></i> M-</button>
+                    <button onclick="handleMemory('MS')" class="py-1.5 rounded-lg bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition font-medium flex items-center justify-center gap-1"><i class="fa-solid fa-floppy-disk text-[10px]"></i> MS</button>
+                </div>
+
+                <!-- Quick Power & Root Shortcuts for Standard Mode -->
+                <div class="grid grid-cols-4 gap-2 mb-2 text-xs">
+                    <button onclick="inputSquare()" class="py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-cyan-300 font-semibold border border-slate-700/50 transition flex items-center justify-center gap-1"><i class="fa-solid fa-superscript text-xs"></i> x²</button>
+                    <button onclick="inputSqrt()" class="py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-cyan-300 font-semibold border border-slate-700/50 transition flex items-center justify-center gap-1"><i class="fa-solid fa-square-root-variable text-xs"></i> √x</button>
+                    <button onclick="inputPower()" class="py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-cyan-300 font-semibold border border-slate-700/50 transition flex items-center justify-center gap-1"><i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> xⁿ</button>
+                    <button onclick="inputReciprocal()" class="py-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-cyan-300 font-semibold border border-slate-700/50 transition flex items-center justify-center gap-1"><i class="fa-solid fa-divide text-xs"></i> 1/x</button>
+                </div>
+
+                <!-- Scientific Extension Block (Toggle visibility or integrated) -->
+                <div id="scientific-keypad-block" class="hidden grid grid-cols-5 sm:grid-cols-5 gap-2 mb-2">
+                    <button onclick="toggleAngleUnit()" id="btn-deg-rad" class="glass-btn p-2.5 rounded-xl text-amber-400 font-semibold text-xs flex items-center justify-center gap-1"><i class="fa-solid fa-compass"></i> DEG</button>
+                    <button onclick="inputFunc('sin')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">sin</button>
+                    <button onclick="inputFunc('cos')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">cos</button>
+                    <button onclick="inputFunc('tan')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">tan</button>
+                    <button onclick="inputFunc('fact')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">n!</button>
+
+                    <button onclick="inputFunc('asin')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">sin⁻¹</button>
+                    <button onclick="inputFunc('acos')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">cos⁻¹</button>
+                    <button onclick="inputFunc('atan')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">tan⁻¹</button>
+                    <button onclick="inputPower()" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">xⁿ</button>
+                    <button onclick="inputSqrt()" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">√x</button>
+
+                    <button onclick="inputFunc('log')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">log</button>
+                    <button onclick="inputFunc('ln')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">ln</button>
+                    <button onclick="inputCube()" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">x³</button>
+                    <button onclick="inputCbrt()" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">∛x</button>
+                    <button onclick="inputNthRoot()" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">ʸ√x</button>
+
+                    <button onclick="inputConst('pi')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs flex items-center justify-center"><i class="fa-solid fa-pi"></i></button>
+                    <button onclick="inputConst('e')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">e</button>
+                    <button onclick="inputSquare()" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">x²</button>
+                    <button onclick="inputReciprocal()" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs">1/x</button>
+                    <button onclick="inputChar('%')" class="glass-btn p-2.5 rounded-xl text-cyan-300 font-medium text-xs"><i class="fa-solid fa-percent"></i></button>
+                </div>
+
+                <!-- Main Standard Keypad Layout -->
+                <div class="grid grid-cols-4 gap-2 text-base font-semibold">
+                    <button onclick="clearDisplay('CE')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center gap-1"><i class="fa-solid fa-eraser text-xs"></i> CE</button>
+                    <button onclick="clearDisplay('C')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 flex items-center justify-center gap-1"><i class="fa-solid fa-rotate-left text-xs"></i> C</button>
+                    <button onclick="backspace()" class="glass-btn p-3.5 sm:p-4 rounded-xl text-amber-400 hover:text-amber-300 flex items-center justify-center"><i class="fa-solid fa-delete-left"></i></button>
+                    <button onclick="inputOp('/')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 flex items-center justify-center"><i class="fa-solid fa-divide"></i></button>
+
+                    <button onclick="inputChar('(')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-300">(</button>
+                    <button onclick="inputChar(')')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-300">)</button>
+                    <button onclick="inputOp('%')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-300 flex items-center justify-center"><i class="fa-solid fa-percent text-xs"></i></button>
+                    <button onclick="inputOp('*')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+
+                    <button onclick="inputChar('7')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">7</button>
+                    <button onclick="inputChar('8')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">8</button>
+                    <button onclick="inputChar('9')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">9</button>
+                    <button onclick="inputOp('-')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 flex items-center justify-center"><i class="fa-solid fa-minus"></i></button>
+
+                    <button onclick="inputChar('4')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">4</button>
+                    <button onclick="inputChar('5')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">5</button>
+                    <button onclick="inputChar('6')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">6</button>
+                    <button onclick="inputOp('+')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 flex items-center justify-center"><i class="fa-solid fa-plus"></i></button>
+
+                    <button onclick="inputChar('1')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">1</button>
+                    <button onclick="inputChar('2')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">2</button>
+                    <button onclick="inputChar('3')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">3</button>
+                    <button onclick="calculateResult()" class="glass-btn p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20 hover:from-cyan-400 hover:to-blue-500 row-span-2 flex items-center justify-center text-xl"><i class="fa-solid fa-equals"></i></button>
+
+                    <button onclick="toggleSign()" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-300 bg-slate-800/40 flex items-center justify-center"><i class="fa-solid fa-plus-minus text-xs"></i></button>
+                    <button onclick="inputChar('0')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">0</button>
+                    <button onclick="inputChar('.')" class="glass-btn p-3.5 sm:p-4 rounded-xl text-slate-100 bg-slate-800/40">.</button>
+                </div>
+            </div>
+
+            <!-- Mode 3: Programmer Keypad Layout -->
+            <div id="keypad-programmer" class="hidden space-y-3">
+                <!-- Bitwise Operator Bar -->
+                <div class="grid grid-cols-6 gap-2 text-xs font-semibold">
+                    <button onclick="inputBitOp('AND')" class="glass-btn py-2 rounded-lg text-cyan-300 flex items-center justify-center gap-1"><i class="fa-solid fa-diagram-project text-[10px]"></i> AND</button>
+                    <button onclick="inputBitOp('OR')" class="glass-btn py-2 rounded-lg text-cyan-300 flex items-center justify-center gap-1"><i class="fa-solid fa-code-branch text-[10px]"></i> OR</button>
+                    <button onclick="inputBitOp('XOR')" class="glass-btn py-2 rounded-lg text-cyan-300 flex items-center justify-center gap-1"><i class="fa-solid fa-code-compare text-[10px]"></i> XOR</button>
+                    <button onclick="inputBitOp('NOT')" class="glass-btn py-2 rounded-lg text-cyan-300 flex items-center justify-center gap-1"><i class="fa-solid fa-ban text-[10px]"></i> NOT</button>
+                    <button onclick="inputBitOp('<<')" class="glass-btn py-2 rounded-lg text-cyan-300 flex items-center justify-center gap-1"><i class="fa-solid fa-angles-left text-[10px]"></i> LSH</button>
+                    <button onclick="inputBitOp('>>')" class="glass-btn py-2 rounded-lg text-cyan-300 flex items-center justify-center gap-1"><i class="fa-solid fa-angles-right text-[10px]"></i> RSH</button>
+                </div>
+
+                <!-- Hex Letters & Numbers -->
+                <div class="grid grid-cols-6 gap-2">
+                    <button onclick="inputHex('A')" id="btn-hex-a" class="glass-btn py-3 rounded-xl text-amber-300 font-bold">A</button>
+                    <button onclick="inputHex('B')" id="btn-hex-b" class="glass-btn py-3 rounded-xl text-amber-300 font-bold">B</button>
+                    <button onclick="inputHex('C')" id="btn-hex-c" class="glass-btn py-3 rounded-xl text-amber-300 font-bold">C</button>
+                    <button onclick="inputHex('D')" id="btn-hex-d" class="glass-btn py-3 rounded-xl text-amber-300 font-bold">D</button>
+                    <button onclick="inputHex('E')" id="btn-hex-e" class="glass-btn py-3 rounded-xl text-amber-300 font-bold">E</button>
+                    <button onclick="inputHex('F')" id="btn-hex-f" class="glass-btn py-3 rounded-xl text-amber-300 font-bold">F</button>
+                </div>
+
+                <!-- Standard Numeric Pads for Prog Mode -->
+                <div class="grid grid-cols-4 gap-2 font-semibold">
+                    <button onclick="clearDisplay('C')" class="glass-btn p-3 rounded-xl text-rose-400 bg-rose-500/10 flex items-center justify-center gap-1"><i class="fa-solid fa-rotate-left text-xs"></i> C</button>
+                    <button onclick="backspace()" class="glass-btn p-3 rounded-xl text-amber-400 flex items-center justify-center"><i class="fa-solid fa-delete-left"></i></button>
+                    <button onclick="inputOp('/')" class="glass-btn p-3 rounded-xl text-cyan-400 flex items-center justify-center"><i class="fa-solid fa-divide"></i></button>
+                    <button onclick="inputOp('*')" class="glass-btn p-3 rounded-xl text-cyan-400 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+
+                    <button onclick="inputChar('7')" id="btn-num-7" class="glass-btn p-3 rounded-xl text-slate-100">7</button>
+                    <button onclick="inputChar('8')" id="btn-num-8" class="glass-btn p-3 rounded-xl text-slate-100">8</button>
+                    <button onclick="inputChar('9')" id="btn-num-9" class="glass-btn p-3 rounded-xl text-slate-100">9</button>
+                    <button onclick="inputOp('-')" class="glass-btn p-3 rounded-xl text-cyan-400 flex items-center justify-center"><i class="fa-solid fa-minus"></i></button>
+
+                    <button onclick="inputChar('4')" id="btn-num-4" class="glass-btn p-3 rounded-xl text-slate-100">4</button>
+                    <button onclick="inputChar('5')" id="btn-num-5" class="glass-btn p-3 rounded-xl text-slate-100">5</button>
+                    <button onclick="inputChar('6')" id="btn-num-6" class="glass-btn p-3 rounded-xl text-slate-100">6</button>
+                    <button onclick="inputOp('+')" class="glass-btn p-3 rounded-xl text-cyan-400 flex items-center justify-center"><i class="fa-solid fa-plus"></i></button>
+
+                    <button onclick="inputChar('1')" id="btn-num-1" class="glass-btn p-3 rounded-xl text-slate-100">1</button>
+                    <button onclick="inputChar('2')" id="btn-num-2" class="glass-btn p-3 rounded-xl text-slate-100">2</button>
+                    <button onclick="inputChar('3')" id="btn-num-3" class="glass-btn p-3 rounded-xl text-slate-100">3</button>
+                    <button onclick="calculateProgResult()" class="glass-btn p-3 rounded-xl bg-cyan-600 text-white row-span-2 flex items-center justify-center text-xl"><i class="fa-solid fa-equals"></i></button>
+
+                    <button onclick="inputChar('0')" id="btn-num-0" class="glass-btn p-3 rounded-xl text-slate-100 col-span-3">0</button>
+                </div>
+            </div>
+
+            <!-- Mode 4: Financial Calculator Area -->
+            <div id="view-financial" class="hidden space-y-4">
+                <div class="flex gap-2 border-b border-slate-800 pb-3">
+                    <button onclick="switchFinSubTab('loan')" id="fin-tab-loan" class="px-3 py-1.5 rounded-lg bg-cyan-500 text-white text-xs font-medium flex items-center gap-1.5"><i class="fa-solid fa-house-chimney-dollar"></i> 貸款與房貸</button>
+                    <button onclick="switchFinSubTab('compound')" id="fin-tab-compound" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium flex items-center gap-1.5"><i class="fa-solid fa-piggy-bank"></i> 複利投資</button>
+                    <button onclick="switchFinSubTab('tip')" id="fin-tab-tip" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium flex items-center gap-1.5"><i class="fa-solid fa-receipt"></i> 小費分帳</button>
+                </div>
+
+                <!-- Loan / Mortgage Calculator -->
+                <div id="fin-section-loan" class="space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-sack-dollar text-cyan-400"></i> 貸款總額 ($)</label>
+                            <input type="number" id="loan-amount" value="10000000" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-percent text-cyan-400"></i> 年利率 (%)</label>
+                            <input type="number" step="0.01" id="loan-rate" value="2.1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-calendar-days text-cyan-400"></i> 貸款年限 (年)</label>
+                            <input type="number" id="loan-years" value="30" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                        </div>
+                    </div>
+                    <button onclick="calcLoan()" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl transition text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-calculator"></i> 計算每月還款金額</button>
+
+                    <!-- Result Box -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 mt-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-hand-holding-dollar text-cyan-400"></i> 預估每月還款金額:</span>
+                            <span id="loan-res-pmt" class="text-xl font-bold text-cyan-400">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-slate-400">
+                            <span>總支付利息:</span>
+                            <span id="loan-res-interest" class="text-slate-200 font-mono">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-slate-400">
+                            <span>本息合計總額:</span>
+                            <span id="loan-res-total" class="text-slate-200 font-mono">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compound Interest Calculator -->
+                <div id="fin-section-compound" class="hidden space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-vault text-cyan-400"></i> 初始本金 ($)</label>
+                            <input type="number" id="cmp-principal" value="100000" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-calendar-check text-cyan-400"></i> 每月定期定額 ($)</label>
+                            <input type="number" id="cmp-monthly" value="10000" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-chart-line text-cyan-400"></i> 年化報酬率 (%)</label>
+                            <input type="number" step="0.1" id="cmp-rate" value="7" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-cyan-400"></i> 投資年限 (年)</label>
+                            <input type="number" id="cmp-years" value="20" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                    </div>
+                    <button onclick="calcCompound()" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl transition text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-chart-pie"></i> 試算複利資產成長</button>
+
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 mt-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-trophy text-emerald-400"></i> 期末預估總資產:</span>
+                            <span id="cmp-res-total" class="text-xl font-bold text-emerald-400">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-slate-400">
+                            <span>投入總本金:</span>
+                            <span id="cmp-res-principal" class="text-slate-200 font-mono">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-slate-400">
+                            <span>獲利收益總額:</span>
+                            <span id="cmp-res-interest" class="text-emerald-400 font-mono">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tip Split Calculator -->
+                <div id="fin-section-tip" class="hidden space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-money-bill-wave text-cyan-400"></i> 消費金額 ($)</label>
+                            <input type="number" id="tip-bill" value="1500" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-hand-holding-dollar text-cyan-400"></i> 服務費 / 小費 (%)</label>
+                            <input type="number" id="tip-percent" value="10" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-users text-cyan-400"></i> 平分人數</label>
+                            <input type="number" id="tip-people" value="4" min="1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                    </div>
+                    <button onclick="calcTip()" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl transition text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-users-viewfinder"></i> 計算每人應付金額</button>
+
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 mt-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-user-check text-cyan-400"></i> 每人平均分攤:</span>
+                            <span id="tip-res-perperson" class="text-xl font-bold text-cyan-400">$0</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-slate-400">
+                            <span>含小費總金額:</span>
+                            <span id="tip-res-total" class="text-slate-200 font-mono">$0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode 5: Unit Converter Area -->
+            <div id="view-converter" class="hidden space-y-4">
+                <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-800 text-xs">
+                    <button onclick="setConvCategory('length')" id="cat-length" class="px-3 py-1.5 rounded-lg bg-cyan-500 text-white whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-ruler-horizontal"></i> 長度</button>
+                    <button onclick="setConvCategory('mass')" id="cat-mass" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-weight-hanging"></i> 質量/重量</button>
+                    <button onclick="setConvCategory('temp')" id="cat-temp" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-temperature-half"></i> 溫度</button>
+                    <button onclick="setConvCategory('area')" id="cat-area" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-vector-square"></i> 面積</button>
+                    <button onclick="setConvCategory('speed')" id="cat-speed" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-gauge-high"></i> 速度</button>
+                    <button onclick="setConvCategory('data')" id="cat-data" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-hard-drive"></i> 數位數據</button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                    <!-- From Unit -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <label class="block text-xs text-slate-400 flex items-center gap-1"><i class="fa-solid fa-right-to-bracket text-cyan-400"></i> 來源數值與單位</label>
+                        <input type="number" id="conv-from-val" value="1" oninput="runConversion()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-lg font-mono text-white focus:outline-none">
+                        <select id="conv-from-unit" onchange="runConversion()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Swap Button & To Unit -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                        <label class="block text-xs text-slate-400 flex items-center gap-1"><i class="fa-solid fa-right-from-bracket text-cyan-400"></i> 轉換結果與單位</label>
+                        <div id="conv-to-val" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-lg font-mono text-cyan-400 font-bold overflow-x-auto min-h-[46px] flex items-center">
+                            0
+                        </div>
+                        <select id="conv-to-unit" onchange="runConversion()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-200">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode 6: Date Calculator Area -->
+            <div id="view-date" class="hidden space-y-4">
+                <div class="flex gap-2 border-b border-slate-800 pb-3 text-xs">
+                    <button onclick="switchDateSubTab('diff')" id="date-tab-diff" class="px-3 py-1.5 rounded-lg bg-cyan-500 text-white flex items-center gap-1.5"><i class="fa-solid fa-calendar-range"></i> 相差天數計算</button>
+                    <button onclick="switchDateSubTab('add')" id="date-tab-add" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 flex items-center gap-1.5"><i class="fa-solid fa-calendar-plus"></i> 加減日數計算</button>
+                </div>
+
+                <!-- Difference Mode -->
+                <div id="date-sec-diff" class="space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-calendar-day text-cyan-400"></i> 開始日期</label>
+                            <input type="date" id="date-start" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-calendar-check text-cyan-400"></i> 結束日期</label>
+                            <input type="date" id="date-end" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                    </div>
+                    <button onclick="calcDateDiff()" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-clock-rotate-left"></i> 計算相隔天數</button>
+                    <div id="date-res-diff-box" class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400 flex items-center justify-center gap-1"><i class="fa-solid fa-hourglass"></i> 相差總天數</span>
+                        <div id="date-res-diff" class="text-2xl font-bold text-cyan-400 mt-1">0 天</div>
+                    </div>
+                </div>
+
+                <!-- Add/Subtract Mode -->
+                <div id="date-sec-add" class="hidden space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-calendar text-cyan-400"></i> 基準日期</label>
+                            <input type="date" id="date-base" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-sliders text-cyan-400"></i> 操作</label>
+                            <select id="date-op-type" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                                <option value="add">增加 (+)</option>
+                                <option value="sub">減少 (−)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1 flex items-center gap-1"><i class="fa-solid fa-arrow-right-to-city text-cyan-400"></i> 天數</label>
+                            <input type="number" id="date-days-val" value="30" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-white">
+                        </div>
+                    </div>
+                    <button onclick="calcDateAddSub()" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-xl text-sm flex items-center justify-center gap-2"><i class="fa-solid fa-bullseye"></i> 計算目標日期</button>
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 text-center">
+                        <span class="text-xs text-slate-400 flex items-center justify-center gap-1"><i class="fa-solid fa-flag-checkered"></i> 計算結果日期</span>
+                        <div id="date-res-target" class="text-2xl font-bold text-emerald-400 mt-1">----/--/--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode 7: Graphing Function Plotter -->
+            <div id="view-graphing" class="hidden space-y-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-mono text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-function text-xs"></i> f(x) =</span>
+                    <input type="text" id="graph-expr" value="sin(x)" placeholder="例如: x^2 - 4, sin(x), 2*x + 1" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2 text-sm text-white font-mono focus:outline-none focus:border-cyan-500">
+                    <button onclick="plotGraph()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg text-xs flex items-center gap-1.5"><i class="fa-solid fa-pen-ruler"></i> 繪製圖像</button>
+                </div>
+                <div class="relative w-full aspect-video sm:aspect-[16/9] bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center">
+                    <canvas id="graph-canvas" class="w-full h-full cursor-crosshair"></canvas>
+                </div>
+                <p class="text-[11px] text-slate-500 text-center flex items-center justify-center gap-1"><i class="fa-solid fa-circle-info"></i> 提示：可使用 x 作為變數，支援 sin, cos, tan, sqrt, log 等數學函數。</p>
+            </div>
+
+        </div>
+
+        <!-- Side Panel: History & Memory Log -->
+        <aside id="history-drawer" class="lg:col-span-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 shadow-xl backdrop-blur-xl flex flex-col h-full min-h-[400px]">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i>
+                    <h2 class="font-bold text-sm">歷史紀錄與記憶體</h2>
+                </div>
+                <button onclick="clearHistory()" class="text-xs text-slate-500 hover:text-rose-400 transition">
+                    <i class="fa-regular fa-trash-can"></i> 清除歷史
+                </button>
+            </div>
+
+            <!-- History List Container -->
+            <div id="history-list" class="flex-1 overflow-y-auto space-y-2 max-h-[500px] pr-1 scrollbar-thin">
+                <div class="text-center py-8 text-xs text-slate-500">尚無計算紀錄</div>
+            </div>
+
+            <!-- Keyboard shortcut guide -->
+            <div class="mt-4 pt-3 border-t border-slate-800/60 text-[11px] text-slate-500 flex justify-between items-center">
+                <span><i class="fa-keyboard mr-1"></i> 支援實體鍵盤直接輸入</span>
+                <span class="text-slate-600">Enter / = 求解</span>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full py-3 text-center text-xs text-slate-600 border-t border-slate-900">
+        萬能全功能計算機 &copy; 2026 OmniCalculator | 適用於科學、工程、金融與日常計算
+    </footer>
+
+    <script>
+        // Core State
+        let currentMode = 'standard'; // standard, scientific, programmer, financial, converter, date, graphing
+        let displayExpr = '';
+        let displayResult = '0';
+        let isEvaluated = false;
+        let memoryValue = 0;
+        let angleUnit = 'DEG'; // DEG or RAD
+        let progBase = 'DEC'; // HEX, DEC, OCT, BIN
+        let historyStack = [];
+
+        // Conversion Units Database
+        const unitData = {
+            length: {
+                name: '長度',
+                units: {
+                    m: { name: '公尺 (m)', factor: 1 },
+                    km: { name: '公里 (km)', factor: 1000 },
+                    cm: { name: '公分 (cm)', factor: 0.01 },
+                    mm: { name: '公釐 (mm)', factor: 0.001 },
+                    inch: { name: '英吋 (in)', factor: 0.0254 },
+                    ft: { name: '英呎 (ft)', factor: 0.3048 },
+                    yd: { name: '碼 (yd)', factor: 0.9144 },
+                    mi: { name: '英哩 (mi)', factor: 1609.344 }
+                }
+            },
+            mass: {
+                name: '質量',
+                units: {
+                    kg: { name: '公斤 (kg)', factor: 1 },
+                    g: { name: '公克 (g)', factor: 0.001 },
+                    mg: { name: '毫克 (mg)', factor: 0.000001 },
+                    lb: { name: '磅 (lb)', factor: 0.45359237 },
+                    oz: { name: '盎司 (oz)', factor: 0.028349523125 },
+                    ton: { name: '公噸 (t)', factor: 1000 }
+                }
+            },
+            temp: {
+                name: '溫度',
+                special: true,
+                units: {
+                    C: '攝氏 (°C)',
+                    F: '華氏 (°F)',
+                    K: '克氏 (K)'
+                }
+            },
+            area: {
+                name: '面積',
+                units: {
+                    sqm: { name: '平方公尺 (m²)', factor: 1 },
+                    sqkm: { name: '平方公里 (km²)', factor: 1000000 },
+                    hectare: { name: '公頃 (ha)', factor: 10000 },
+                    ping: { name: '坪', factor: 3.305785 },
+                    acre: { name: '英畝', factor: 4046.856422 }
+                }
+            },
+            speed: {
+                name: '速度',
+                units: {
+                    mps: { name: '公尺/秒 (m/s)', factor: 1 },
+                    kph: { name: '公里/時 (km/h)', factor: 0.277777778 },
+                    mph: { name: '英哩/時 (mph)', factor: 0.44704 },
+                    knot: { name: '節 (knot)', factor: 0.514444444 }
+                }
+            },
+            data: {
+                name: '數位數據',
+                units: {
+                    B: { name: 'Bytes (B)', factor: 1 },
+                    KB: { name: 'Kilobytes (KB)', factor: 1024 },
+                    MB: { name: 'Megabytes (MB)', factor: 1048576 },
+                    GB: { name: 'Gigabytes (GB)', factor: 1073741824 },
+                    TB: { name: 'Terabytes (TB)', factor: 1099511627776 }
+                }
+            }
+        };
+
+        // Initialize App
+        window.onload = function() {
+            initBitGrid();
+            initConverterUI();
+            setDefaultDates();
+            plotGraph();
+            updateDisplay();
+        };
+
+        // Switch Calculator Modes
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Highlight active tab
+            document.querySelectorAll('.mode-tab').forEach(tab => {
+                tab.classList.remove('bg-cyan-500', 'text-white', 'shadow-sm');
+                tab.classList.add('text-slate-400', 'hover:text-slate-200');
+            });
+            const activeTab = document.getElementById(`tab-${mode}`);
+            if (activeTab) {
+                activeTab.classList.add('bg-cyan-500', 'text-white', 'shadow-sm');
+                activeTab.classList.remove('text-slate-400');
+            }
+
+            // Hide/Show keypads and sections
+            document.getElementById('calculator-display-section').classList.toggle('hidden', ['financial', 'converter', 'date', 'graphing'].includes(mode));
+            document.getElementById('keypad-standard-scientific').classList.toggle('hidden', mode === 'programmer' || ['financial', 'converter', 'date', 'graphing'].includes(mode));
+            document.getElementById('scientific-keypad-block').classList.toggle('hidden', mode !== 'scientific');
+            document.getElementById('keypad-programmer').classList.toggle('hidden', mode !== 'programmer');
+            document.getElementById('programmer-bit-display').classList.toggle('hidden', mode !== 'programmer');
+
+            document.getElementById('view-financial').classList.toggle('hidden', mode !== 'financial');
+            document.getElementById('view-converter').classList.toggle('hidden', mode !== 'converter');
+            document.getElementById('view-date').classList.toggle('hidden', mode !== 'date');
+            document.getElementById('view-graphing').classList.toggle('hidden', mode !== 'graphing');
+
+            if (mode === 'graphing') {
+                setTimeout(plotGraph, 50);
+            }
+        }
+
+        // Display Management
+        function updateDisplay() {
+            const mainDisp = document.getElementById('main-display');
+            const previewDisp = document.getElementById('expression-preview');
+
+            previewDisp.textContent = displayExpr;
+            mainDisp.textContent = displayResult || '0';
+
+            if (currentMode === 'programmer') {
+                updateProgrammerBases();
+            }
+        }
+
+        function inputChar(char) {
+            if (isEvaluated) {
+                displayExpr = '';
+                displayResult = '';
+                isEvaluated = false;
+            }
+            if (displayResult === '0' && char !== '.') {
+                displayResult = char;
+            } else {
+                displayResult += char;
+            }
+            updateDisplay();
+        }
+
+        function inputOp(op) {
+            if (isEvaluated) {
+                isEvaluated = false;
+            }
+            displayExpr += ' ' + displayResult + ' ' + op;
+            displayResult = '0';
+            updateDisplay();
+        }
+
+        function clearDisplay(type) {
+            if (type === 'CE') {
+                displayResult = '0';
+            } else {
+                displayExpr = '';
+                displayResult = '0';
+            }
+            isEvaluated = false;
+            updateDisplay();
+        }
+
+        function backspace() {
+            if (isEvaluated) return;
+            if (displayResult.length > 1) {
+                displayResult = displayResult.slice(0, -1);
+            } else {
+                displayResult = '0';
+            }
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            if (displayResult === '0') return;
+            if (displayResult.startsWith('-')) {
+                displayResult = displayResult.substring(1);
+            } else {
+                displayResult = '-' + displayResult;
+            }
+            updateDisplay();
+        }
+
+        function toggleAngleUnit() {
+            angleUnit = angleUnit === 'DEG' ? 'RAD' : 'DEG';
+            document.getElementById('deg-rad-badge').textContent = angleUnit;
+            document.getElementById('btn-deg-rad').textContent = angleUnit;
+        }
+
+        function inputFunc(fnName) {
+            if (isEvaluated) isEvaluated = false;
+            
+            if (fnName === 'sqrt') {
+                displayResult = `sqrt(${displayResult})`;
+            } else if (fnName === 'fact') {
+                displayResult = `factorial(${displayResult})`;
+            } else if (['sin', 'cos', 'tan', 'asin', 'acos', 'atan'].includes(fnName)) {
+                if (angleUnit === 'DEG') {
+                    displayResult = `${fnName}(${displayResult} deg)`;
+                } else {
+                    displayResult = `${fnName}(${displayResult})`;
+                }
+            } else {
+                displayResult = `${fnName}(${displayResult})`;
+            }
+            updateDisplay();
+        }
+
+        function inputConst(c) {
+            if (c === 'pi') displayResult = Math.PI.toString();
+            if (c === 'e') displayResult = Math.E.toString();
+            updateDisplay();
+        }
+
+        // Power & Root Dedicated Handlers
+        function inputSquare() {
+            if (isEvaluated) isEvaluated = false;
+            displayResult = `(${displayResult})^2`;
+            updateDisplay();
+        }
+
+        function inputCube() {
+            if (isEvaluated) isEvaluated = false;
+            displayResult = `(${displayResult})^3`;
+            updateDisplay();
+        }
+
+        function inputPower() {
+            if (isEvaluated) isEvaluated = false;
+            displayExpr += ' ' + displayResult + ' ^ ';
+            displayResult = '0';
+            updateDisplay();
+        }
+
+        function inputSqrt() {
+            if (isEvaluated) isEvaluated = false;
+            displayResult = `sqrt(${displayResult})`;
+            updateDisplay();
+        }
+
+        function inputCbrt() {
+            if (isEvaluated) isEvaluated = false;
+            displayResult = `cbrt(${displayResult})`;
+            updateDisplay();
+        }
+
+        function inputNthRoot() {
+            if (isEvaluated) isEvaluated = false;
+            displayExpr += ' ' + displayResult + ' ^ (1 / ';
+            displayResult = '0';
+            updateDisplay();
+        }
+
+        function inputReciprocal() {
+            if (isEvaluated) isEvaluated = false;
+            displayResult = `1/(${displayResult})`;
+            updateDisplay();
+        }
+
+        function calculateResult() {
+            try {
+                let fullExpr = displayExpr + ' ' + displayResult;
+                fullExpr = fullExpr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+                
+                // Auto-close open parentheses for root/power expressions
+                const openParen = (fullExpr.match(/\(/g) || []).length;
+                const closeParen = (fullExpr.match(/\)/g) || []).length;
+                if (openParen > closeParen) {
+                    fullExpr += ')'.repeat(openParen - closeParen);
+                }
+
+                let evalResult = math.evaluate(fullExpr);
+                
+                // Format floating numbers cleanly
+                if (typeof evalResult === 'number') {
+                    evalResult = Math.round(evalResult * 1e10) / 1e10;
+                }
+
+                addHistory(fullExpr, evalResult.toString());
+                displayExpr = '';
+                displayResult = evalResult.toString();
+                isEvaluated = true;
+                updateDisplay();
+            } catch (err) {
+                showToast("語法錯誤，請檢查輸入內容");
+            }
+        }
+
+        // Memory Operations
+        function handleMemory(op) {
+            let currentVal = parseFloat(displayResult) || 0;
+            if (op === 'MC') {
+                memoryValue = 0;
+            } else if (op === 'MR') {
+                displayResult = memoryValue.toString();
+            } else if (op === 'M+') {
+                memoryValue += currentVal;
+            } else if (op === 'M-') {
+                memoryValue -= currentVal;
+            } else if (op === 'MS') {
+                memoryValue = currentVal;
+            }
+            
+            document.getElementById('memory-badge').classList.toggle('hidden', memoryValue === 0);
+            updateDisplay();
+            showToast(`記憶體: ${memoryValue}`);
+        }
+
+        function initBitGrid() {
+            const grid = document.getElementById('bit-grid');
+            grid.innerHTML = '';
+            for (let i = 63; i >= 0; i--) {
+                const bitBtn = document.createElement('button');
+                bitBtn.className = `bit-box font-mono flex items-center justify-center rounded ${i % 8 === 0 ? 'mr-1' : ''} bg-slate-800 text-slate-400 hover:text-cyan-300`;
+                bitBtn.textContent = '0';
+                bitBtn.dataset.bitIndex = i;
+                bitBtn.onclick = () => toggleBit(i);
+                grid.appendChild(bitBtn);
+            }
+        }
+
+        function toggleBit(index) {
+            try {
+                let val = BigInt(parseInt(displayResult, getBaseRadix(progBase)) || 0);
+                val ^= (1n << BigInt(index));
+                displayResult = formatBaseValue(val, progBase);
+                updateDisplay();
+            } catch (e) {
+                showToast("無法對該格式切換 Bit");
+            }
+        }
+
+        function getBaseRadix(base) {
+            if (base === 'HEX') return 16;
+            if (base === 'OCT') return 8;
+            if (base === 'BIN') return 2;
+            return 10;
+        }
+
+        function formatBaseValue(bigIntVal, base) {
+            if (base === 'HEX') return bigIntVal.toString(16).toUpperCase();
+            if (base === 'OCT') return bigIntVal.toString(8);
+            if (base === 'BIN') return bigIntVal.toString(2);
+            return bigIntVal.toString(10);
+        }
+
+        function setProgBase(base) {
+            let currentDec = BigInt(parseInt(displayResult, getBaseRadix(progBase)) || 0);
+            progBase = base;
+            displayResult = formatBaseValue(currentDec, progBase);
+            updateDisplay();
+        }
+
+        function updateProgrammerBases() {
+            try {
+                let currentVal = BigInt(parseInt(displayResult, getBaseRadix(progBase)) || 0);
+                
+                document.querySelector('#hex-view span').textContent = currentVal.toString(16).toUpperCase();
+                document.querySelector('#dec-view span').textContent = currentVal.toString(10);
+                document.querySelector('#oct-view span').textContent = currentVal.toString(8);
+                document.querySelector('#bin-view span').textContent = currentVal.toString(2);
+
+                // Update Bit Grid visual UI
+                const bits = currentVal.toString(2).padStart(64, '0');
+                const bitButtons = document.querySelectorAll('#bit-grid button');
+                bitButtons.forEach((btn, idx) => {
+                    let bitIdx = 63 - idx;
+                    let bitVal = bits[idx] || '0';
+                    btn.textContent = bitVal;
+                    if (bitVal === '1') {
+                        btn.classList.add('bg-cyan-600', 'text-white');
+                        btn.classList.remove('bg-slate-800', 'text-slate-400');
+                    } else {
+                        btn.classList.remove('bg-cyan-600', 'text-white');
+                        btn.classList.add('bg-slate-800', 'text-slate-400');
+                    }
+                });
+            } catch(e) {}
+        }
+
+        function inputHex(letter) {
+            if (progBase !== 'HEX') return;
+            inputChar(letter);
+        }
+
+        function inputBitOp(op) {
+            displayExpr += ` ${displayResult} ${op}`;
+            displayResult = '0';
+            updateDisplay();
+        }
+
+        function calculateProgResult() {
+            try {
+                let fullExpr = displayExpr + ' ' + displayResult;
+                // Basic bitwise evaluator for programmer mode
+                let result = evalProgExpr(fullExpr);
+                addHistory(fullExpr, result.toString());
+                displayExpr = '';
+                displayResult = result;
+                isEvaluated = true;
+                updateDisplay();
+            } catch(e) {
+                showToast("程式員計算語法錯誤");
+            }
+        }
+
+        function evalProgExpr(expr) {
+            // Simplified programmer mode evaluator
+            expr = expr.replace(/AND/g, '&').replace(/OR/g, '|').replace(/XOR/g, '^').replace(/NOT/g, '~');
+            return math.evaluate(expr).toString();
+        }
+
+        // Financial Calculators
+        function switchFinSubTab(sub) {
+            ['loan', 'compound', 'tip'].forEach(t => {
+                document.getElementById(`fin-section-${t}`).classList.toggle('hidden', t !== sub);
+                const tabBtn = document.getElementById(`fin-tab-${t}`);
+                if (t === sub) {
+                    tabBtn.className = "px-3 py-1.5 rounded-lg bg-cyan-500 text-white text-xs font-medium";
+                } else {
+                    tabBtn.className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 text-xs font-medium";
+                }
+            });
+        }
+
+        function calcLoan() {
+            let P = parseFloat(document.getElementById('loan-amount').value) || 0;
+            let annualR = parseFloat(document.getElementById('loan-rate').value) || 0;
+            let years = parseFloat(document.getElementById('loan-years').value) || 0;
+
+            let r = annualR / 100 / 12;
+            let n = years * 12;
+
+            if (r === 0) {
+                let pmt = P / n;
+                document.getElementById('loan-res-pmt').textContent = `$${Math.round(pmt).toLocaleString()}`;
+                document.getElementById('loan-res-interest').textContent = `$0`;
+                document.getElementById('loan-res-total').textContent = `$${Math.round(P).toLocaleString()}`;
+                return;
+            }
+
+            let pmt = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+            let total = pmt * n;
+            let interest = total - P;
+
+            document.getElementById('loan-res-pmt').textContent = `$${Math.round(pmt).toLocaleString()}`;
+            document.getElementById('loan-res-interest').textContent = `$${Math.round(interest).toLocaleString()}`;
+            document.getElementById('loan-res-total').textContent = `$${Math.round(total).toLocaleString()}`;
+        }
+
+        function calcCompound() {
+            let P = parseFloat(document.getElementById('cmp-principal').value) || 0;
+            let M = parseFloat(document.getElementById('cmp-monthly').value) || 0;
+            let annualR = parseFloat(document.getElementById('cmp-rate').value) || 0;
+            let years = parseFloat(document.getElementById('cmp-years').value) || 0;
+
+            let r = annualR / 100 / 12;
+            let months = years * 12;
+
+            let totalAcc = P * Math.pow(1 + r, months);
+            for (let i = 1; i <= months; i++) {
+                totalAcc += M * Math.pow(1 + r, months - i);
+            }
+
+            let totalPrincipal = P + (M * months);
+            let totalProfit = totalAcc - totalPrincipal;
+
+            document.getElementById('cmp-res-total').textContent = `$${Math.round(totalAcc).toLocaleString()}`;
+            document.getElementById('cmp-res-principal').textContent = `$${Math.round(totalPrincipal).toLocaleString()}`;
+            document.getElementById('cmp-res-interest').textContent = `$${Math.round(totalProfit).toLocaleString()}`;
+        }
+
+        function calcTip() {
+            let bill = parseFloat(document.getElementById('tip-bill').value) || 0;
+            let percent = parseFloat(document.getElementById('tip-percent').value) || 0;
+            let people = parseInt(document.getElementById('tip-people').value) || 1;
+
+            let total = bill * (1 + percent / 100);
+            let perPerson = total / people;
+
+            document.getElementById('tip-res-perperson').textContent = `$${Math.round(perPerson).toLocaleString()}`;
+            document.getElementById('tip-res-total').textContent = `$${Math.round(total).toLocaleString()}`;
+        }
+
+        // Converter
+        let currentConvCat = 'length';
+
+        function initConverterUI() {
+            setConvCategory('length');
+        }
+
+        function setConvCategory(cat) {
+            currentConvCat = cat;
+            document.querySelectorAll('[id^="cat-"]').forEach(btn => {
+                btn.className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 whitespace-nowrap";
+            });
+            document.getElementById(`cat-${cat}`).className = "px-3 py-1.5 rounded-lg bg-cyan-500 text-white whitespace-nowrap";
+
+            const fromSelect = document.getElementById('conv-from-unit');
+            const toSelect = document.getElementById('conv-to-unit');
+            fromSelect.innerHTML = '';
+            toSelect.innerHTML = '';
+
+            const catInfo = unitData[cat];
+            let keys = Object.keys(catInfo.units);
+
+            keys.forEach((k, idx) => {
+                let name = catInfo.special ? catInfo.units[k] : catInfo.units[k].name;
+                fromSelect.options.add(new Option(name, k));
+                toSelect.options.add(new Option(name, k));
+            });
+
+            if (keys.length > 1) toSelect.selectedIndex = 1;
+            runConversion();
+        }
+
+        function runConversion() {
+            let val = parseFloat(document.getElementById('conv-from-val').value) || 0;
+            let fromU = document.getElementById('conv-from-unit').value;
+            let toU = document.getElementById('conv-to-unit').value;
+
+            let result = 0;
+
+            if (currentConvCat === 'temp') {
+                result = convertTemperature(val, fromU, toU);
+            } else {
+                let catUnits = unitData[currentConvCat].units;
+                let baseVal = val * catUnits[fromU].factor;
+                result = baseVal / catUnits[toU].factor;
+            }
+
+            document.getElementById('conv-to-val').textContent = (Math.round(result * 1e8) / 1e8).toString();
+        }
+
+        function convertTemperature(v, f, t) {
+            if (f === t) return v;
+            let celsius = v;
+            if (f === 'F') celsius = (v - 32) * 5 / 9;
+            if (f === 'K') celsius = v - 273.15;
+
+            if (t === 'C') return celsius;
+            if (t === 'F') return (celsius * 9 / 5) + 32;
+            if (t === 'K') return celsius + 273.15;
+        }
+
+        // Date Calculators
+        function setDefaultDates() {
+            let today = new Date().toISOString().split('T')[0];
+            document.getElementById('date-start').value = today;
+            document.getElementById('date-end').value = today;
+            document.getElementById('date-base').value = today;
+        }
+
+        function switchDateSubTab(sub) {
+            document.getElementById('date-sec-diff').classList.toggle('hidden', sub !== 'diff');
+            document.getElementById('date-sec-add').classList.toggle('hidden', sub !== 'add');
+            document.getElementById('date-tab-diff').className = sub === 'diff' ? "px-3 py-1.5 rounded-lg bg-cyan-500 text-white" : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400";
+            document.getElementById('date-tab-add').className = sub === 'add' ? "px-3 py-1.5 rounded-lg bg-cyan-500 text-white" : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400";
+        }
+
+        function calcDateDiff() {
+            let d1 = new Date(document.getElementById('date-start').value);
+            let d2 = new Date(document.getElementById('date-end').value);
+            let diffTime = Math.abs(d2 - d1);
+            let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            document.getElementById('date-res-diff').textContent = `${diffDays} 天`;
+        }
+
+        function calcDateAddSub() {
+            let base = new Date(document.getElementById('date-base').value);
+            let op = document.getElementById('date-op-type').value;
+            let days = parseInt(document.getElementById('date-days-val').value) || 0;
+
+            if (op === 'sub') days = -days;
+            base.setDate(base.getDate() + days);
+
+            let resStr = base.toISOString().split('T')[0];
+            document.getElementById('date-res-target').textContent = resStr;
+        }
+
+        // Graphing Engine
+        function plotGraph() {
+            const canvas = document.getElementById('graph-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            // Set scale resolution
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const expr = document.getElementById('graph-expr').value;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Origin center
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const scale = 30; // 30px per unit
+
+            // Draw grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 1;
+
+            for (let x = centerX % scale; x < w; x += scale) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            }
+            for (let y = centerY % scale; y < h; y += scale) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+
+            // Draw Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(w, centerY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, h); ctx.stroke();
+
+            // Plot Function
+            ctx.strokeStyle = '#06b6d4';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            let isFirst = true;
+
+            for (let px = 0; px < w; px++) {
+                let x = (px - centerX) / scale;
+                try {
+                    let y = math.evaluate(expr, { x: x });
+                    if (typeof y === 'number' && !isNaN(y) && isFinite(y)) {
+                        let py = centerY - (y * scale);
+                        if (isFirst) {
+                            ctx.moveTo(px, py);
+                            isFirst = false;
+                        } else {
+                            ctx.lineTo(px, py);
+                        }
+                    } else {
+                        isFirst = true;
+                    }
+                } catch(e) {
+                    isFirst = true;
+                }
+            }
+            ctx.stroke();
+        }
+
+        // History Drawer Logic
+        function addHistory(expr, result) {
+            historyStack.unshift({ expr, result, time: new Date().toLocaleTimeString() });
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            if (historyStack.length === 0) {
+                list.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">尚無計算紀錄</div>`;
+                return;
+            }
+
+            list.innerHTML = historyStack.map((item, idx) => `
+                <div onclick="useHistoryResult('${item.result}')" class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/50 cursor-pointer transition group">
+                    <div class="text-[11px] text-slate-500 flex justify-between">
+                        <span>${item.time}</span>
+                        <span class="group-hover:text-cyan-400">載入數值</span>
+                    </div>
+                    <div class="text-xs text-slate-400 font-mono truncate mt-0.5">${item.expr} =</div>
+                    <div class="text-sm font-bold text-cyan-300 font-mono text-right">${item.result}</div>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            historyStack = [];
+            renderHistory();
+        }
+
+        function useHistoryResult(val) {
+            displayResult = val;
+            updateDisplay();
+            showToast("已載入歷史數值");
+        }
+
+        function copyToClipboard() {
+            const text = displayResult;
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            showToast("結果已複製到剪貼簿");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        }
+
+        // Global Keyboard Event Listener
+        window.addEventListener('keydown', (e) => {
+            if (['financial', 'converter', 'date', 'graphing'].includes(currentMode)) return;
+
+            if ((e.key >= '0' && e.key <= '9') || e.key === '.') {
+                inputChar(e.key);
+            } else if (['+', '-', '*', '/'].includes(e.key)) {
+                inputOp(e.key);
+            } else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                if (currentMode === 'programmer') calculateProgResult();
+                else calculateResult();
+            } else if (e.key === 'Backspace') {
+                backspace();
+            } else if (e.key === 'Escape') {
+                clearDisplay('C');
+            } else if (e.key === '(' || e.key === ')') {
+                inputChar(e.key);
+            }
+        });
+
+        // Window resize handler for Canvas re-render
+        window.addEventListener('resize', () => {
+            if (currentMode === 'graphing') plotGraph();
+        });
+    </script>
+</body>
+</html>
